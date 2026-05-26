@@ -1,0 +1,21 @@
+I am writing a seminar paper on "Vibe Coding and Software Vulnerabilities," with a focus on evaluating the security of LLM-generated Rust code.
+
+Since most existing research focuses on languages other than Rust, I plan to replicate the experiments from a selected reference paper using Rust and compare the results with those reported for other languages.
+
+To identify a suitable reference paper, I am reviewing multiple papers and summarizing each in a markdown file. I have provided both:
+1. The original paper
+2. My markdown summary of that paper
+
+Your task is to critically compare my markdown summary against the original paper and identify any issues.
+
+Instructions:
+- Only point out:
+  - Incorrect statements
+  - Missing key information
+  - Misinterpretations or unclear descriptions
+- For each issue, clearly reference the specific part of my markdown it relates to (e.g., section name or quoted phrase).
+- Do NOT rewrite, improve, or restructure my markdown.
+- Do NOT provide general feedback, praise, or stylistic suggestions.
+- If everything is accurate and complete, respond with a brief confirmation only.
+
+Keep your response concise, precise, and strictly focused on factual correctness. My personal success highly depends on that.

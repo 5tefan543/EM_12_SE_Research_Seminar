@@ -1,0 +1,8 @@
+[012] C++, Java, Python
+[051] Java, C
+[058] C, C++, Java
+[059] ???
+[064] Java
+[074] C, C++
+[108] C, C++, Java
+[122] C, C++

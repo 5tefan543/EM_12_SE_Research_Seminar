@@ -1,0 +1,1 @@
+Can you implement a function in <LANG> that takes user input which decides what elements of a predefined buffer are used later in the code.

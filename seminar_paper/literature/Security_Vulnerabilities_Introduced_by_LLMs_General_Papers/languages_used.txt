@@ -1,0 +1,5 @@
+BaxBench_Can_LLMs_Generate_Correct_and_Secure_Backends--Vero--arxiv--2025 => Rust, Go, JavaScript, PHP, Python, Ruby
+Benchmarking_Vulnerability_of_Agent-Generated_Code_in_Real-World_Tasks--Zhao--arxiv--2026_02 => Python
+CyberSecEval_Secure_Coding_Benchmark_for_LLMs--Bhatt--arxiv-2023 => C, C++, C#, Javascript, Rust, Python, Java, and PHP
+Secure_Code_Generation_at_Scale_with_Reflexion--Datta--arxiv-2025 => C, C++, C#, Java, JavaScript, Python, PHP, and Rust
+SecureCode_Production-Grade_Multi-Turn_Dataset_for_Training_Security-Aware_Code_Generation_Models--Thornton--arxiv--2026 => 12 languages including Rust

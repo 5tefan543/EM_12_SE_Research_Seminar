@@ -1,0 +1,55 @@
+[83] Perry et. al.
+
+    Title: Do Users Write More Insecure Code with AI Assistants?
+    Type: User Study
+
+    Approach:
+    - We designed and conducted a comprehensive user study where 47 participants conducted five security-related programming tasks spanning three different programming languages.
+    - Participants were split into two groups: control group (without AI use) & experiment group (with AI use
+
+    Results:
+    - Overall, we find that participants who had access to an AI assistant wrote significantly less secure code than those without access to an assistant.
+    - We found that those who specified task instructions, provided function declarations to use, and had the AI Assistant focus on writing helper functions generated more secure code.
+    - Participants with access to an AI assistant were also more likely to believe they wrote secure code, suggesting that such tools may lead users to be overconfident about security flaws in their code.
+
+[90] Sandoval et. al.
+
+    Title: Lost at C: A User Study on the Security Implications of Large Language Model Code Assistants
+    Type: User Study
+
+    Approach:
+    - We conduct a security-driven user study (N=58) to assess code written by student programmers when assisted by LLMs.
+    - Our user study had 58 computer science undergraduate and graduate students with programming backgrounds split randomly into ‘control’ (no Codex LLM access) and ‘assisted’ (with Codex LLM access) groups.
+    - In addition to the two user groups, we created 30 solutions that were generated entirely by the Codex LLM as an ‘autopilot’ group.
+
+    Results:
+    - Our results indicate that the security impact in this setting (low-level C with pointer and array manipulations) is small.
+    - We confirm existing findings on the productivity benefits of AI-assistance (RQ1), while finding that the AI-assisted group produced security-critical bugs at a rate no greater than 10 % higher than the control group (non-assisted) (RQ2).
+    - When investigating the origin of bugs within the assisted users (RQ3), 63 % of the bugs originate in code written by humans and 36 % of the bugs were present in taken suggestions.
+
+[24] Firouzi et. al.
+
+    Title: Time to separate from StackOverflow and match with ChatGPT for encryption
+    Type: StackOverflow posts
+
+    Approach:
+    - We manually inspected 400 StackOverflow posts that are about JCA symmetric encryption.
+    - We provided 100 StackOverflow questions to ChatGPT and recorded the answers.
+
+    Results:
+    - We found that the majority of reported problems (i.e., 214 posts) are at the ‘‘cipher object initialization’’ stage. The primary challenges were in key and initialization vector (IV) management.
+    - The examination of 13 security rules in 400 posts revealed a striking number of 327 posts (i.e. 82%) with security violations.
+    - Overall, the findings revealed 5305 violations in 3174 posts, averaging 1.7 violations in 92% of StackOverflow posts.
+
+
+[34] Hamer et. al.
+
+    Title: Just another copy and paste? Comparing the security vulnerabilities of ChatGPT generated code and StackOverflow answers
+    Type: StackOverflow posts
+
+    Approach:
+    - In this work, our goal is to raise software developers’ awareness of the security implications when selecting code snippets by empirically comparing the vulnerabilities of ChatGPT and StackOverflow (SO).
+
+    Results:
+    - ChatGPT-generated code contained 248 vulnerabilities compared to the 302 vulnerabilities found in SO snippets, producing 20% fewer vulnerabilities with a statistically significant difference.
+    - Additionally, ChatGPT generated 19 types of CWE, fewer than the 22 found in SO.

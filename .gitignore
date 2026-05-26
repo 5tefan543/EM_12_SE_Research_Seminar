@@ -9,5 +9,6 @@ wheels/
 # Virtual environments
 .venv
 
-# Dataset
-Data/
+# Datasets
+seminar_paper/experiment/reference_study/Data/
+seminar_paper/DevGPT.zip

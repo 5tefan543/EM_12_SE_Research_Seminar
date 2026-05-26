@@ -1,0 +1,35 @@
+[35]  He et. al. (2023)
+
+    Title: Large Language Models for Code: Security Hardening and Adversarial Testing
+    Type: Guided code generation through prefix tuning
+
+    Approach:
+    - This work studies the security of LMs along two important axes: (i) security hardening, which aims to enhance LMs’ reliability in generating secure code, and (ii) adversarial testing, which seeks to evaluate LMs’ security at an adversarial standpoint.
+    - We address both of these by formulating a new security task called controlled code generation.
+    - This task involves providing LMs with an additional binary property, alongside the prompt, that specifies whether it should generate secure (for security hardening) or unsafe code (for adversarial testing).
+    - We propose a novel learning-based approach called SVEN to solve this task. SVEN leverages property-specific continuous vectors to guide program generation towards the given property, without modifying the LM’s weights.
+    - Our training procedure optimizes these continuous vectors by enforcing specialized loss terms on different regions of code, using a high-quality dataset carefully curated by us.
+    - Our training dataset consists of security fixes extracted from GitHub commits, where each fix includes a program pair: the program before (resp., after) the fix is insecure (resp., secure).
+    - Each evaluation scenario targets one CWE and contains a prompt expressing the desired code functionality, based on which the model can suggest secure or unsafe code completions.
+
+    Results:
+    - Our extensive evaluation shows that SVEN is highly effective in achieving strong security control.
+    - For example, SVEN improves secure code generation for CodeGen-2.7B from 59.1% to 92.3% (or degrades to 36.8% for adversarial testing) while closely matching the original functional correctness of the code when generated without SVEN.
+
+[36]  He. et. al. (2024)
+
+    Title: Instruction Tuning for Secure Code Generation
+    Type: Fine-Tuning on secure vs insecure code
+
+    Approach:
+    - We introduce SafeCoder, a novel approach that addresses the security limitation of LMs during the instruction tuning phase.
+    - SafeCoder (= a fine tuning strategy) performs security-specific tuning using a dataset of secure and insecure programs.
+    - The goal is to fine-tune an existing LLM to produce more secure code by penalizing vulnerable outputs during supervised training.
+    - In each training iteration, specific loss functions are employed depending on the origin of the training sample, forming a joint optimization for the objectives specified by the two datasets.
+    - We propose an automated, two-step pipeline for extracting high-quality security datasets from GitHub.
+
+    Results:
+    - SafeCoder is able to drastically improve security (by about 30%), while preserving utility.
+    - In practice, we observe a well-balanced interplay between the two objectives, resulting in a remarkable security-for-free benefit. That is, the resulting LM achieves significantly improved security with negligible sacrifice on utility, when compared to an LM trained solely with standard instruction tuning.
+    - Across a diverse set of 60 testing scenarios, using SafeCoder during instruction tuning yields LMs that reach a secure code generation rate of ∼90%, surpassing their pretrained versions and their instruction-tuned counterparts without SafeCoder by ∼30%.
+    - Adding explicit security instructions to prompts (even CWE-specific ones) does not significantly improve the security of generated code.

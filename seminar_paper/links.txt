@@ -1,0 +1,7 @@
+https://cwe.mitre.org/top25/archive/2025/2025_cwe_top25.html
+https://genai.owasp.org/llm-top-10/
+
+
+LLM generated Rust code:
+- DevGPT: https://zenodo.org/records/16392320
+- https://github.com/sciyoshi/advent-of-rust/tree/ea793a26b39d1553f0563ae08886a8bff40becd7/src/aoc2023

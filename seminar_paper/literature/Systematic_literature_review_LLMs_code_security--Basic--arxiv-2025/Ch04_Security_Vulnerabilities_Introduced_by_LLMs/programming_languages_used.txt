@@ -1,0 +1,20 @@
+[009] C, C++
+[030] Python
+[035] Python, JavaScript
+[037] Python
+[039] Python, C
+[040] Java
+[042] Python, C, C++
+[043] C, C++, Go, Java, JavaScript, Python, Ruby
+[048] C, C++, Python, html, Java.
+[049] C
+[061] C, C++, Java, Python, JavaScript
+[068] C++, C#, Python
+[080] Python, C, Verilog (hardware description language)
+[083] Python, JavaScript, C
+[086] Python
+[087] C, (mentions: Rust)
+[090] Python
+[091] Python
+[097] C (references: Fixing rust compilation errors using llms)
+[098] PHP
