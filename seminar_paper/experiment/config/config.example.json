@@ -1,0 +1,10 @@
+{
+  "credentials": {
+    "openai": {
+      "api_key": ""
+    },
+    "google": {
+      "api_key": ""
+    }
+  }
+}

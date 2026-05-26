@@ -12,3 +12,6 @@ wheels/
 # Datasets
 seminar_paper/experiment/reference_study/Data/
 seminar_paper/DevGPT.zip
+
+# Configurations
+config.json
