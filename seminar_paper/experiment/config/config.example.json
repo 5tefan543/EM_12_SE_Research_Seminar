@@ -1,4 +1,11 @@
 {
+  "dataset": {
+    "dir_path": "data",
+    "instruction_file": "instructions.md",
+    "prompt_file": "prompt.rs",
+    "response_file": "generated_code.rs",
+    "repetitions": 3
+  },
   "credentials": {
     "openai": {
       "api_key": ""

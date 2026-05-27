@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 from config import Config
-from openai_service import OpenAIService
+from runner import Runner
 import asyncio
 
 
@@ -19,17 +19,11 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
-
 def main() -> None:
     args = parse_args()
     config = Config.from_json_file(args.config)
-
-    openai_service = OpenAIService(api_key=config.credentials.openai.api_key)
-
-    response = asyncio.run(
-        openai_service.generate_response("What is the capital of France?")
-    )
-    print(response)
+    runner = Runner(config)
+    asyncio.run(runner.run())
 
 if __name__ == "__main__":
     main()

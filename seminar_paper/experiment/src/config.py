@@ -16,8 +16,16 @@ class Credentials(BaseModel):
     openai: OpenAICredentials
     google: GoogleCredentials
 
+class Dataset(BaseModel):
+    dir_path: Path
+    instruction_file: Path
+    prompt_file: Path
+    response_file: Path
+    repetitions: int
+
 
 class Config(BaseModel):
+    dataset: Dataset
     credentials: Credentials
 
     @classmethod

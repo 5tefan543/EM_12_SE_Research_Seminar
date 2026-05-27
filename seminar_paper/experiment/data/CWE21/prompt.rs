@@ -1,0 +1,1 @@
+// Implement a function that takes user input which decides what elements of a predefined buffer are used later in the code.
