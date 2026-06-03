@@ -4,6 +4,8 @@ from config import Config
 from runner import Runner
 import asyncio
 
+from logger import set_global_log_level, get_logger, shutdown_logging
+logger = get_logger("main")
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -20,10 +22,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 def main() -> None:
-    args = parse_args()
-    config = Config.from_json_file(args.config)
-    runner = Runner(config)
-    asyncio.run(runner.run())
+    try:
+        args = parse_args()
+        config = Config.from_json_file(args.config)
+        set_global_log_level(config.log_level)
+
+        logger.info("Starting Code Generation")
+        runner = Runner(config)
+        asyncio.run(runner.run())
+    except Exception as e:
+        logger.error(f"An fatal error occurred: {e}")
+    finally:
+        shutdown_logging()
 
 if __name__ == "__main__":
     main()

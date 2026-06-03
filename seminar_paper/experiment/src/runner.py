@@ -4,6 +4,8 @@ from pathlib import Path
 from config import Config
 from ai_services import AIServiceFactory, AIService, GenerationResult
 
+from logger import get_logger
+logger = get_logger(__name__)
 
 @dataclass(frozen=True)
 class Prompt:
@@ -36,8 +38,20 @@ class Runner:
 
             for repetition in range(1, dataset.repetitions + 1):
                 for service in services:
-                    result = await service.generate_response(instructions, prompt_text, prompt.prompt_path)
-                    self._write_response(prompt, result, dataset.response_file, service, repetition)
+
+                    result = await service.generate_response(instructions, prompt_text)
+                    response_file_path = self._build_response_file_path(prompt.prompt_path, dataset.response_file, service, repetition, result.is_failed)
+                    
+                    messages = self._get_log_messages(result, service, prompt.prompt_path, response_file_path)
+                    log_message = " | ".join(messages)
+
+                    if result.is_failed:
+                        result.content = "\n".join(messages)
+                        logger.error(log_message)
+                    else:
+                        logger.info(log_message)
+                    
+                    response_file_path.write_text(result.content, encoding="utf-8")
 
     def _validate_dataset_dir(self, dataset_dir: Path) -> None:
         if not dataset_dir.exists():
@@ -121,36 +135,19 @@ class Runner:
 
         return instruction_cache[instruction_path]
 
-    def _write_response(
+    def _build_response_file_path(
         self,
-        prompt: Prompt,
-        result: GenerationResult,
-        response_file: Path,
-        ai_service: AIService,
-        repetition: int,
-    ) -> None:
-        response_file_name = self._build_response_file_name(
-            response_file=response_file,
-            ai_service=ai_service,
-            repetition=repetition,
-            is_failed=result.is_failed
-        )
-
-        response_path = prompt.prompt_path.parent.joinpath(response_file_name)
-        response_path.write_text(result.content, encoding="utf-8")
-
-    def _build_response_file_name(
-        self,
+        prompt_file: Path,
         response_file: Path,
         ai_service: AIService,
         repetition: int,
         is_failed: bool
-    ) -> str:
+    ) -> Path:
         provider = self._sanitize_file_name_part(ai_service.provider)
         model = self._sanitize_file_name_part(ai_service.model)
         failed_suffix = "_FAILED" if is_failed else ""
-
-        return (
+        
+        return prompt_file.parent.joinpath(
             f"{response_file.stem}_"
             f"{provider}_"
             f"{model}_"
@@ -167,3 +164,25 @@ class Runner:
             .replace(":", "-")
             .replace(" ", "_")
         )
+
+    def _get_log_messages(
+        self,
+        result: GenerationResult,
+        service: AIService,
+        prompt_path: Path,
+        response_file_path: Path,
+    ) -> list[str]:
+        status = "FAILED" if result.is_failed else "SUCCESSFUL"
+
+        msg = []
+        msg.append(f"Generation {status}")
+        msg.append(f"provider={service.provider}")
+        msg.append(f"model={service.model}")
+        msg.append(f"prompt={prompt_path}")
+        msg.append(f"response={response_file_path}")
+
+        if result.is_failed:
+            msg.append(f"error_type={type(result.error).__name__}")
+            msg.append(f"error_message={result.error}")
+
+        return msg

@@ -24,6 +24,7 @@ class Dataset(BaseModel):
 
 
 class Config(BaseModel):
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     dataset: Dataset
     ai: AIConfig
 

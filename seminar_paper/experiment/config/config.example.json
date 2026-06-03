@@ -1,4 +1,5 @@
 {
+  "log_level": "INFO",
   "dataset": {
     "dir_path": "data",
     "instruction_file": "instructions.md",
