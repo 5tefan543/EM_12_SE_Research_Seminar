@@ -2,19 +2,18 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from pydantic import BaseModel
+from typing import Literal
 
 
-class OpenAICredentials(BaseModel):
+class ProviderConfig(BaseModel):
+    name: Literal["openai", "google"]
+    model: str
     api_key: str
 
 
-class GoogleCredentials(BaseModel):
-    api_key: str
+class AIConfig(BaseModel):
+    providers: list[ProviderConfig]
 
-
-class Credentials(BaseModel):
-    openai: OpenAICredentials
-    google: GoogleCredentials
 
 class Dataset(BaseModel):
     dir_path: Path
@@ -26,7 +25,7 @@ class Dataset(BaseModel):
 
 class Config(BaseModel):
     dataset: Dataset
-    credentials: Credentials
+    ai: AIConfig
 
     @classmethod
     def from_json_file(cls, config_path: str | Path) -> Config:

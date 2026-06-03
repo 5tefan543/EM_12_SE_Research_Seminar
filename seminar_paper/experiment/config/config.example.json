@@ -6,12 +6,18 @@
     "response_file": "generated_code.rs",
     "repetitions": 3
   },
-  "credentials": {
-    "openai": {
-      "api_key": ""
-    },
-    "google": {
-      "api_key": ""
-    }
+  "ai": {
+    "providers": [
+      {
+        "name": "openai",
+        "model": "gpt-5.4-mini",
+        "api_key": ""
+      },
+      {
+        "name": "google",
+        "model": "gemini-2.5-flash",
+        "api_key": ""
+      }
+    ]
   }
 }

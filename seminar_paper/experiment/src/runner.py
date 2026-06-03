@@ -1,8 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-from config import Config, Dataset
-from openai_service import OpenAIService
+from config import Config
+from ai_services import AIServiceFactory, AIService, GenerationResult
 
 
 @dataclass(frozen=True)
@@ -25,19 +25,19 @@ class Runner:
             instruction_file=dataset.instruction_file,
         )
 
-        openai_service = OpenAIService(
-            api_key=self._config.credentials.openai.api_key)
-
         instruction_cache: dict[Path, str] = {}
+        services = AIServiceFactory.create_services(self._config.ai)
 
         for prompt in prompts:
+            prompt_text = prompt.prompt_path.read_text(encoding="utf-8")
+
             instructions = self._get_instruction_text(
                 instruction_path=prompt.instruction_path, instruction_cache=instruction_cache)
-            
-            response = await self.generate_response(dataset, openai_service, instructions, prompt)
 
-            self._write_response(
-                prompt=prompt, response=response, response_file=dataset.response_file)
+            for repetition in range(1, dataset.repetitions + 1):
+                for service in services:
+                    result = await service.generate_response(instructions, prompt_text, prompt.prompt_path)
+                    self._write_response(prompt, result, dataset.response_file, service, repetition)
 
     def _validate_dataset_dir(self, dataset_dir: Path) -> None:
         if not dataset_dir.exists():
@@ -121,24 +121,49 @@ class Runner:
 
         return instruction_cache[instruction_path]
 
-    async def generate_response(self, dataset: Dataset, ai_service: OpenAIService, instructions: str, prompt: Prompt):
-        prompt_text = prompt.prompt_path.read_text(encoding="utf-8")
-
-        response = await ai_service.generate_response(
-            instructions=instructions,
-            prompt=prompt_text,
-        )
-
-        print(f"Generated response for: {prompt.prompt_path}")
-        print("-" * 80)
-
-        return response
-
     def _write_response(
         self,
         prompt: Prompt,
-        response: str,
+        result: GenerationResult,
         response_file: Path,
+        ai_service: AIService,
+        repetition: int,
     ) -> None:
-        response_path = prompt.prompt_path.parent.joinpath(response_file.name)
-        response_path.write_text(response, encoding="utf-8")
+        response_file_name = self._build_response_file_name(
+            response_file=response_file,
+            ai_service=ai_service,
+            repetition=repetition,
+            is_failed=result.is_failed
+        )
+
+        response_path = prompt.prompt_path.parent.joinpath(response_file_name)
+        response_path.write_text(result.content, encoding="utf-8")
+
+    def _build_response_file_name(
+        self,
+        response_file: Path,
+        ai_service: AIService,
+        repetition: int,
+        is_failed: bool
+    ) -> str:
+        provider = self._sanitize_file_name_part(ai_service.provider)
+        model = self._sanitize_file_name_part(ai_service.model)
+        failed_suffix = "_FAILED" if is_failed else ""
+
+        return (
+            f"{response_file.stem}_"
+            f"{provider}_"
+            f"{model}_"
+            f"v{repetition}"
+            f"{failed_suffix}"
+            f"{response_file.suffix}"
+        )
+
+    def _sanitize_file_name_part(self, value: str) -> str:
+        return (
+            value
+            .replace("/", "-")
+            .replace("\\", "-")
+            .replace(":", "-")
+            .replace(" ", "_")
+        )
