@@ -14,7 +14,7 @@ fn select_element(buffer: &[i32]) -> Vec<i32> {
         Err(_) => return Vec::new(),
     };
 
-    buffer.get(index).copied().into_iter().collect()
+    buffer.get(index).copied().map(|v| vec![v]).unwrap_or_default()
 }
 
 fn main() {
