@@ -3,9 +3,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from config import Config
 from ai_services import AIServiceFactory, AIService, GenerationResult
+from datetime import datetime
+import shutil
 
 from logger import get_logger
 logger = get_logger(__name__)
+
 
 @dataclass(frozen=True)
 class Prompt:
@@ -14,12 +17,31 @@ class Prompt:
 
 
 class Runner:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, clean_output: bool):
         self._config = config
+        self._clean_output_dir(clean_output)
+
+    def _clean_output_dir(self, clean_output: bool) -> None:
+
+        if not clean_output:
+            return
+
+        output_dir = self._config.dataset.output_dir.resolve()
+
+        if not output_dir.exists():
+            logger.info(f"Output directory '{output_dir}' does not exist. No cleanup needed.")
+            return
+
+        if not output_dir.is_dir():
+            raise ValueError(f"Output path is not a directory: {output_dir}")
+
+        shutil.rmtree(output_dir)
+        logger.info(f"Cleaned output directory: {output_dir}")
 
     async def run(self) -> None:
         dataset = self._config.dataset
         self._validate_dataset_dir(dataset.dir_path)
+        current_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         prompts = self._collect_prompts(
             dataset_dir=dataset.dir_path,
@@ -40,9 +62,19 @@ class Runner:
                 for service in services:
 
                     result = await service.generate_response(instructions, prompt_text)
-                    response_file_path = self._build_response_file_path(prompt.prompt_path, dataset.response_file, service, repetition, result.is_failed)
-                    
-                    messages = self._get_log_messages(result, service, prompt.prompt_path, response_file_path)
+                    response_file_path = self._build_response_file_path(
+                        current_timestamp,
+                        dataset.dir_path,
+                        dataset.output_dir,
+                        prompt.prompt_path,
+                        dataset.response_file,
+                        service,
+                        repetition,
+                        result.is_failed
+                    )
+
+                    messages = self._get_log_messages(
+                        result, service, prompt.prompt_path, response_file_path)
                     log_message = " | ".join(messages)
 
                     if result.is_failed:
@@ -50,8 +82,9 @@ class Runner:
                         logger.error(log_message)
                     else:
                         logger.info(log_message)
-                    
-                    response_file_path.write_text(result.content, encoding="utf-8")
+
+                    response_file_path.write_text(
+                        result.content, encoding="utf-8")
 
     def _validate_dataset_dir(self, dataset_dir: Path) -> None:
         if not dataset_dir.exists():
@@ -137,21 +170,35 @@ class Runner:
 
     def _build_response_file_path(
         self,
+        timestamp: str,
+        dataset_dir: Path,
+        output_dir: Path,
         prompt_file: Path,
         response_file: Path,
         ai_service: AIService,
         repetition: int,
-        is_failed: bool
+        is_failed: bool,
+        version: int = 1,
     ) -> Path:
         provider = self._sanitize_file_name_part(ai_service.provider)
         model = self._sanitize_file_name_part(ai_service.model)
         failed_suffix = "_FAILED" if is_failed else ""
-        
-        return prompt_file.parent.joinpath(
+
+        relative_prompt_dir = prompt_file.parent.relative_to(dataset_dir)
+
+        base_path = (
+            output_dir
+            / timestamp
+            / relative_prompt_dir
+            / f"{provider}_{model}"
+            / f"rep_{repetition}"
+        )
+
+        base_path.mkdir(parents=True, exist_ok=True)
+
+        return base_path.joinpath(
             f"{response_file.stem}_"
-            f"{provider}_"
-            f"{model}_"
-            f"v{repetition}"
+            f"v{version}"
             f"{failed_suffix}"
             f"{response_file.suffix}"
         )
@@ -176,13 +223,12 @@ class Runner:
 
         msg = []
         msg.append(f"Generation {status}")
-        msg.append(f"provider={service.provider}")
-        msg.append(f"model={service.model}")
-        msg.append(f"prompt={prompt_path}")
-        msg.append(f"response={response_file_path}")
+        msg.append(f"provider: {service.provider}")
+        msg.append(f"model: {service.model}")
+        msg.append(f"prompt: {prompt_path}")
+        msg.append(f"response: {response_file_path}")
 
         if result.is_failed:
-            msg.append(f"error_type={type(result.error).__name__}")
-            msg.append(f"error_message={result.error}")
+            msg.append(f"error_type: {type(result.error).__name__}")
 
         return msg

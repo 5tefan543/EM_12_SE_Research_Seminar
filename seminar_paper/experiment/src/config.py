@@ -19,6 +19,7 @@ class Dataset(BaseModel):
     dir_path: Path
     instruction_file: Path
     prompt_file: Path
+    output_dir: Path
     response_file: Path
     repetitions: int
 
