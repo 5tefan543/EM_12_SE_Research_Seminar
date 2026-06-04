@@ -16,6 +16,7 @@ class AIServiceFactory:
                         OpenAIService(
                             api_key=provider.api_key,
                             model=provider.model,
+                            temperature=provider.temperature,
                         )
                     )
 
@@ -24,6 +25,7 @@ class AIServiceFactory:
                         GoogleAIService(
                             api_key=provider.api_key,
                             model=provider.model,
+                            temperature=provider.temperature,
                         )
                     )
 

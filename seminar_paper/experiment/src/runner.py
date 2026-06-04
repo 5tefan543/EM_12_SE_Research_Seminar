@@ -5,6 +5,7 @@ from config import Config
 from ai_services import AIServiceFactory, AIService, GenerationResult
 from datetime import datetime
 import shutil
+from compile_handlers import CompileHandlerFactory
 
 from logger import get_logger
 logger = get_logger(__name__)
@@ -29,7 +30,8 @@ class Runner:
         output_dir = self._config.dataset.output_dir.resolve()
 
         if not output_dir.exists():
-            logger.info(f"Output directory '{output_dir}' does not exist. No cleanup needed.")
+            logger.info(
+                f"Output directory '{output_dir}' does not exist. No cleanup needed.")
             return
 
         if not output_dir.is_dir():
@@ -51,6 +53,8 @@ class Runner:
 
         instruction_cache: dict[Path, str] = {}
         services = AIServiceFactory.create_services(self._config.ai)
+        compile_handler = CompileHandlerFactory.create_handler(
+            dataset.compile_handler_type)
 
         for prompt in prompts:
             prompt_text = prompt.prompt_path.read_text(encoding="utf-8")
@@ -60,31 +64,56 @@ class Runner:
 
             for repetition in range(1, dataset.repetitions + 1):
                 for service in services:
+                    state_ids = set()
+                    current_state_id = None
 
-                    result = await service.generate_response(instructions, prompt_text)
-                    response_file_path = self._build_response_file_path(
-                        current_timestamp,
-                        dataset.dir_path,
-                        dataset.output_dir,
-                        prompt.prompt_path,
-                        dataset.response_file,
-                        service,
-                        repetition,
-                        result.is_failed
-                    )
+                    for version in range(1, dataset.max_versions + 1):
+                        result = await service.generate_response(instructions, prompt_text, current_state_id)
+                        response_file_path = self._build_response_file_path(
+                            current_timestamp,
+                            dataset.dir_path,
+                            dataset.output_dir,
+                            prompt.prompt_path,
+                            dataset.response_file,
+                            service,
+                            repetition,
+                            version,
+                            result.is_failed
+                        )
+                        
+                        state_ids.add(result.state_id)
+                        current_state_id = result.state_id
 
-                    messages = self._get_log_messages(
-                        result, service, prompt.prompt_path, response_file_path)
-                    log_message = " | ".join(messages)
+                        messages = self._get_log_messages(
+                            result, service, prompt.prompt_path, response_file_path)
+                        log_message = " | ".join(messages)
 
-                    if result.is_failed:
-                        result.content = "\n".join(messages)
-                        logger.error(log_message)
-                    else:
-                        logger.info(log_message)
+                        if result.is_failed:
+                            result.content = "\n".join(messages)
+                            logger.error(log_message)
+                        else:
+                            logger.info(log_message)
 
-                    response_file_path.write_text(
-                        result.content, encoding="utf-8")
+                        # Compile code
+                        compilation_result = await compile_handler.compile(result.content)
+
+                        response_file_content = f"{result.content}\n\n{compile_handler.comment_symbol}Compilation:\n{compile_handler.comment_symbol}{compilation_result.message}"
+                        response_file_path.write_text(
+                            response_file_content, encoding="utf-8")
+
+                        if not compilation_result.is_failed:
+                            break
+
+                        logger.info(
+                            "Generating new prompt due to compilation failure...")
+                        logger.info(
+                            f"Compilation error: {compilation_result.message}")
+
+                        prompt_text = f"Compilation failed with the following error:\n{compilation_result.message}\n\nPlease fix the code and try again."
+
+                    # Cleanup any remaining states for the current service
+                    for state_id in state_ids:
+                        await service.delete_state(state_id)
 
     def _validate_dataset_dir(self, dataset_dir: Path) -> None:
         if not dataset_dir.exists():
@@ -177,8 +206,8 @@ class Runner:
         response_file: Path,
         ai_service: AIService,
         repetition: int,
-        is_failed: bool,
-        version: int = 1,
+        version: int,
+        is_failed: bool
     ) -> Path:
         provider = self._sanitize_file_name_part(ai_service.provider)
         model = self._sanitize_file_name_part(ai_service.model)

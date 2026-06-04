@@ -3,12 +3,14 @@ import json
 from pathlib import Path
 from pydantic import BaseModel
 from typing import Literal
+from compile_handlers import CompileHandlerType
 
 
 class ProviderConfig(BaseModel):
     name: Literal["openai", "google"]
     model: str
     api_key: str
+    temperature: float
 
 
 class AIConfig(BaseModel):
@@ -22,6 +24,8 @@ class Dataset(BaseModel):
     output_dir: Path
     response_file: Path
     repetitions: int
+    max_versions: int
+    compile_handler_type: CompileHandlerType
 
 
 class Config(BaseModel):
