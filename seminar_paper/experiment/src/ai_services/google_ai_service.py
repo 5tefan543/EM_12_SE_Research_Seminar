@@ -1,6 +1,7 @@
 from google import genai
 from .base import AIService
-from typing import Tuple
+from typing import Optional, Tuple
+import asyncio
 
 
 class GoogleAIService(AIService):
@@ -14,31 +15,34 @@ class GoogleAIService(AIService):
 
         self._client = genai.Client(api_key=api_key)
 
-    async def _generate_response(self, instructions: str, prompt: str, state_id: str = None) -> Tuple[str, str]:
+    async def _generate_response(
+        self,
+        instructions: str,
+        prompt: str,
+        state_id: Optional[str] = None,
+    ) -> Tuple[str, str]:
 
-        if state_id is None:
-            interaction = self._client.interactions.create(
-                input=prompt,
-                model=self.model,
-                system_instruction=instructions,
-                generation_config={
-                    "temperature": self.temperature
-                }
-            )
+        kwargs = {
+            "input": prompt,
+            "model": self.model,
+            "system_instruction": instructions,
+            "generation_config": {
+                "temperature": self.temperature,
+            },
+        }
 
-            return interaction.id, interaction.output_text
+        if state_id is not None:
+            kwargs["previous_interaction_id"] = state_id
 
-        interaction = self._client.interactions.create(
-            input=prompt,
-            model=self.model,
-            previous_interaction_id=state_id,
-            system_instruction=instructions,
-            generation_config={
-                "temperature": self.temperature
-            }
+        interaction = await asyncio.to_thread(
+            self._client.interactions.create,
+            **kwargs,
         )
 
         return interaction.id, interaction.output_text
 
     async def _delete_state(self, state_id: str) -> None:
-        self._client.interactions.delete(state_id)
+        await asyncio.to_thread(
+            self._client.interactions.delete,
+            state_id,
+        )
