@@ -109,34 +109,37 @@ class Runner:
                             else:
                                 logger.info(msg)
 
-                        response_file_content = service_response.content
+                        response_file_content = self.strip_markdown_code_fence(service_response.content)
 
+                        # Write error message to response file if generation failed and skip compilation
                         if service_response.is_failed:
                             response_file_content = "\n".join(messages)
                             response_file_path.write_text(
                                 response_file_content, encoding="utf-8")
                             break
 
-                        # Compile code if generation was successful
-                        compilation_result = await compile_handler.compile(service_response.content)
-
-                        response_file_content = (
-                            f"{response_file_content}\n\n"
-                            f"{compile_handler.comment_symbol}Compilation:\n"
-                            f"{compile_handler.comment_symbol}{compilation_result.message}"
-                        )
+                        # Write the generated response to the response file before compilation
                         response_file_path.write_text(
                             response_file_content, encoding="utf-8")
 
+                        # Compile code
+                        compilation_result = await compile_handler.compile(response_file_path)
+
+                        # Append compilation message to the response file
+                        with open(response_file_path, "a", encoding="utf-8") as f:
+                            f.write(compilation_result.message)
+
+                        # Skip retrying generation if compilation succeeded
                         if not compilation_result.is_failed:
                             logger.info(f"{self.logger_indent}Compilation successful for version {version}")
                             break
 
                         logger.info(
                             f"{self.logger_indent}Compilation failed for version {version}")
-                        logger.info(
+                        logger.debug(
                             f"{self.logger_indent}Compilation error: {compilation_result.message}")
 
+                        # Create a new prompt that includes the compilation error message for the next version
                         prompt_text = (
                             f"Compilation failed with the following error:\n"
                             f"{compilation_result.message}\n\n"
@@ -297,3 +300,23 @@ class Runner:
             msg.append(f"{self.logger_indent}error_message: {str(result.error)}")
 
         return msg
+
+    def strip_markdown_code_fence(self, text: str) -> str:
+        text = text.strip()
+        marker = "```"
+
+        if not text.startswith(marker):
+            return text
+
+        lines = text.splitlines()
+
+        if len(lines) < 2:
+            return text
+
+        first_line = lines[0].strip().lower()
+        last_line = lines[-1].strip()
+
+        if first_line.startswith(marker) and last_line.startswith(marker):
+            return "\n".join(lines[1:-1]).strip()
+
+        return text

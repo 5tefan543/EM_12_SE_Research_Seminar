@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Tuple
+from pathlib import Path
 
 from logging import getLogger
 logger = getLogger(__name__)
@@ -14,13 +14,13 @@ class CompilationResult:
 class CompileHandler(ABC):
     comment_symbol: str
 
-    async def compile(self, code: str) -> CompilationResult:
+    async def compile(self, source_code_path: Path) -> CompilationResult:
         try:
-            return await self._compile(code)
+            return await self._compile(source_code_path)
 
         except Exception as error:
             return CompilationResult(message=str(error), is_failed=True)
 
     @abstractmethod
-    async def _compile(self, code: str) -> CompilationResult:
+    async def _compile(self, source_code_path: Path) -> CompilationResult:
         ...
