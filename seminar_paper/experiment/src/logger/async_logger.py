@@ -18,8 +18,10 @@ class ColoredFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         color = self.COLORS.get(record.levelno, self.RESET)
 
+
+        max_levelname_length = max(len(levelname) for levelname in logging._nameToLevel.keys())
         original_levelname = record.levelname
-        record.levelname = f"{color}{record.levelname}{self.RESET}"
+        record.levelname = f"{color}{record.levelname:<{max_levelname_length}}{self.RESET}"
 
         try:
             return super().format(record)
@@ -46,7 +48,7 @@ def set_global_log_level(log_level: str) -> None:
 
 def get_logger(
     logger_name: str = "app",
-    fmt: str = "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    fmt: str = "%(asctime)s %(levelname)s %(name)s: %(message)s",
 ) -> logging.Logger:
     """
     Configure asynchronous, non-blocking logging using a queue and background listener.

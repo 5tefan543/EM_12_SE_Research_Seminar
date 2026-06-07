@@ -1,9 +1,10 @@
 from __future__ import annotations
+import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 from config import Config
 from ai_services import AIServiceFactory, AIService, GenerationResult
-from datetime import datetime
+from datetime import datetime, timedelta
 import shutil
 from compile_handlers import CompileHandlerFactory
 
@@ -18,6 +19,9 @@ class Prompt:
 
 
 class Runner:
+    logger_indent = "  - "
+    request_sleep_time = timedelta(seconds=3)
+
     def __init__(self, config: Config, clean_output: bool):
         self._config = config
         self._clean_output_dir(clean_output)
@@ -55,6 +59,15 @@ class Runner:
         services = AIServiceFactory.create_services(self._config.ai)
         compile_handler = CompileHandlerFactory.create_handler(
             dataset.compile_handler_type)
+        
+        logger.info(f"Starting experiment with {len(prompts)} prompts.")
+        logger.info(f"Dataset directory: {dataset.dir_path}")
+        logger.info(f"Output directory: {dataset.output_dir}")
+        logger.info(f"Using AI services:")
+        for service in services:
+            logger.info(
+                f"{self.logger_indent}Provider: {service.provider}, Model: {service.model}")
+        logger.info(f"Using compile handler: {compile_handler.__class__.__name__}")
 
         for prompt in prompts:
             prompt_text = prompt.prompt_path.read_text(encoding="utf-8")
@@ -68,7 +81,10 @@ class Runner:
                     current_state_id = None
 
                     for version in range(1, dataset.max_versions + 1):
-                        result = await service.generate_response(instructions, prompt_text, current_state_id)
+                        # Ensure some wait time between requests to avoid hitting rate limits
+                        await asyncio.sleep(self.request_sleep_time.total_seconds())
+
+                        service_response = await service.generate_response(instructions, prompt_text, current_state_id)
                         response_file_path = self._build_response_file_path(
                             current_timestamp,
                             dataset.dir_path,
@@ -78,38 +94,59 @@ class Runner:
                             service,
                             repetition,
                             version,
-                            result.is_failed
+                            service_response.is_failed
                         )
                         
-                        state_ids.add(result.state_id)
-                        current_state_id = result.state_id
+                        state_ids.add(service_response.state_id)
+                        current_state_id = service_response.state_id
 
                         messages = self._get_log_messages(
-                            result, service, prompt.prompt_path, response_file_path)
-                        log_message = " | ".join(messages)
+                            service_response, service, prompt.prompt_path, response_file_path)
 
-                        if result.is_failed:
-                            result.content = "\n".join(messages)
-                            logger.error(log_message)
-                        else:
-                            logger.info(log_message)
+                        for msg in messages:
+                            if service_response.is_failed:
+                                logger.error(msg)
+                            else:
+                                logger.info(msg)
 
-                        # Compile code
-                        compilation_result = await compile_handler.compile(result.content)
+                        response_file_content = service_response.content
 
-                        response_file_content = f"{result.content}\n\n{compile_handler.comment_symbol}Compilation:\n{compile_handler.comment_symbol}{compilation_result.message}"
+                        if service_response.is_failed:
+                            response_file_content = "\n".join(messages)
+                            response_file_path.write_text(
+                                response_file_content, encoding="utf-8")
+                            break
+
+                        # Compile code if generation was successful
+                        compilation_result = await compile_handler.compile(service_response.content)
+
+                        response_file_content = (
+                            f"{response_file_content}\n\n"
+                            f"{compile_handler.comment_symbol}Compilation:\n"
+                            f"{compile_handler.comment_symbol}{compilation_result.message}"
+                        )
                         response_file_path.write_text(
                             response_file_content, encoding="utf-8")
 
                         if not compilation_result.is_failed:
+                            logger.info(f"{self.logger_indent}Compilation successful for version {version}")
                             break
 
                         logger.info(
-                            "Generating new prompt due to compilation failure...")
+                            f"{self.logger_indent}Compilation failed for version {version}")
                         logger.info(
-                            f"Compilation error: {compilation_result.message}")
+                            f"{self.logger_indent}Compilation error: {compilation_result.message}")
 
-                        prompt_text = f"Compilation failed with the following error:\n{compilation_result.message}\n\nPlease fix the code and try again."
+                        prompt_text = (
+                            f"Compilation failed with the following error:\n"
+                            f"{compilation_result.message}\n\n"
+                            f"Please fix the code and try again."
+                        )
+
+                        if version == dataset.max_versions:
+                            logger.warning(f"{self.logger_indent}Reached maximum versions for this prompt and service. Moving to next prompt.")
+                        else:
+                            logger.info(f"{self.logger_indent}Retrying generation with updated prompt for version {version + 1}")
 
                     # Cleanup any remaining states for the current service
                     for state_id in state_ids:
@@ -218,8 +255,8 @@ class Runner:
         base_path = (
             output_dir
             / timestamp
-            / relative_prompt_dir
             / f"{provider}_{model}"
+            / relative_prompt_dir
             / f"rep_{repetition}"
         )
 
@@ -251,13 +288,12 @@ class Runner:
         status = "FAILED" if result.is_failed else "SUCCESSFUL"
 
         msg = []
-        msg.append(f"Generation {status}")
-        msg.append(f"provider: {service.provider}")
-        msg.append(f"model: {service.model}")
-        msg.append(f"prompt: {prompt_path}")
-        msg.append(f"response: {response_file_path}")
+        msg.append(f"Generation {status}:")
+        msg.append(f"{self.logger_indent}prompt: {prompt_path}")
+        msg.append(f"{self.logger_indent}response: {response_file_path}")
 
         if result.is_failed:
-            msg.append(f"error_type: {type(result.error).__name__}")
+            msg.append(f"{self.logger_indent}error_type: {type(result.error).__name__}")
+            msg.append(f"{self.logger_indent}error_message: {str(result.error)}")
 
         return msg

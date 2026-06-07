@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Optional, Tuple
 
 from logging import getLogger
 logger = getLogger(__name__)
@@ -30,7 +30,11 @@ class AIService(ABC):
     async def _generate_response(self, instructions: str, prompt: str, state_id: str = None) -> Tuple[str, str]:
         ...
 
-    async def delete_state(self, state_id: str) -> None:
+    async def delete_state(self, state_id: Optional[str] = None) -> None:
+        if state_id is None:
+            logger.warning(f"No state_id provided for deletion in provider {self.provider}. Skipping state deletion.")
+            return
+
         try:
             await self._delete_state(state_id)
         except Exception as error:
